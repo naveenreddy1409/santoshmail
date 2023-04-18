@@ -1,0 +1,87 @@
+require(['N/record'],function(record){
+  // var timebillObj = record.load({
+  //   type: record.Type.TIME_BILL,
+  //   id: 191647
+  // })
+   // var start_time = timebillObj.getValue ("custcol_calculated_start");
+  // var end_time = timebillObj.getValue ( "custcol_calculated_end");
+  var start_time = "11:59a";
+  var end_time = "11:59p";
+  var timeArr = formatTimePunches(start_time,end_time)
+log.debug('punchin',roundingRule(timeArr[0],timeArr[2]) );
+ 
+log.debug('punchout',roundingRule(timeArr[1],timeArr[3]) );
+
+
+
+    function roundingRule(hours_before_formatting,am_pm){
+     // var input = hours_before_formatting;
+                    //  var mts = Math.round((input * 60) % 60);
+                    //  log.debug(input);
+                    //  var inputstr = input.toString();
+                     var d = hours_before_formatting;
+                     var prefixQty = parseInt(d.split(":")[0]);
+   
+                     var postQty = parseInt(d.split(":")[1]);
+   
+                     var n = postQty;
+   
+                     var nearest_minutes = 0
+   
+   
+                     if (n >= 0 && n <= 7) {
+                         nearest_minutes = "00";
+                     }
+                     if (n > 7 && n <= 22) {
+                         nearest_minutes = "15";
+                     }
+                     if (n > 22 && n <= 37) {
+                         nearest_minutes = "30";
+                     }
+                     if (n > 37 && n <= 52) {
+                         nearest_minutes = "45";
+                     }
+                     if (n > 52 && n <= 60) {
+                      if(prefixQty == 11){am_pm = (am_pm == "p")?"a":"p"}
+                      if(prefixQty!= 12){
+                         prefixQty += 1}else{prefixQty-=11}
+                         nearest_minutes = "00";
+                     }
+   
+   
+   
+                     postQty = nearest_minutes;
+                     var hours = prefixQty +":"+ postQty;
+      return [hours + am_pm];
+  }
+ 
+  function formatTimePunches(start_time,end_time){
+    //12:39a  04:00p
+   
+ 
+  if(start_time && end_time){
+  var temp_start_arr = start_time.split(":");
+  var temp_end_arr = end_time.split(":");
+  var am_or_pm_1 = temp_start_arr[1].match("a") ;
+  if(!am_or_pm_1){
+    am_or_pm_1 = ["p"];
+  }
+  var hrs1 = temp_start_arr[0];
+    var min1 = temp_start_arr[1].replace(am_or_pm_1[0],"");
+
+    var am_or_pm_2 = temp_end_arr[1].match("a") ;
+    log.debug(am_or_pm_2);
+  if(!am_or_pm_2){
+    am_or_pm_2 = ["p"];
+  }
+  var hrs2 = temp_end_arr[0];
+    var min2 = temp_end_arr[1].replace(am_or_pm_2[0],"");
+ 
+  }else{
+    log.error("missing start/end time in timebill",start_time +end_time);
+}
+return [hrs1+":"+min1,hrs2+":"+min2,am_or_pm_1,am_or_pm_2];
+   // return [calc_start,calc_end]
+ }
+
+});
