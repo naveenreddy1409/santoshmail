@@ -1,0 +1,613 @@
+/**
+ * @NApiVersion 2.x
+ * @NScriptType UserEventScript
+ * @NModuleScope SameAccount
+ */
+define(['N/record','N/ui/serverWidget'],
+
+function(record,serverWidget) {
+   
+    /**
+     * Function definition to be triggered before record is loaded.
+     *
+     * @param {Object} scriptContext
+     * @param {Record} scriptContext.newRecord - New record
+     * @param {string} scriptContext.type - Trigger type
+     * @param {Form} scriptContext.form - Current form
+     * @Since 2015.2
+     */
+    function beforeLoad(scriptContext) {
+    	try{
+    		if(scriptContext.type == "view"){
+    			var form = scriptContext.form;
+    			form.addButton({
+    				id : 'custpage_vwb_button',
+    				label : 'Valiant Weekly Billing Print',
+    				functionName : 'redirectToValiantWeeklyPrint('+scriptContext.newRecord.id+')'
+    			});
+    			
+    			form.clientScriptModulePath = './amz_cs_mps_attachments_for_pdf_actions.js';
+    		}
+    	}catch(ex){
+    		log.error(ex.name,ex.message)
+    	}
+
+    }
+
+    /**
+     * Function definition to be triggered before record is loaded.
+     *
+     * @param {Object} scriptContext
+     * @param {Record} scriptContext.newRecord - New record
+     * @param {Record} scriptContext.oldRecord - Old record
+     * @param {string} scriptContext.type - Trigger type
+     * @Since 2015.2
+     */
+    function beforeSubmit(scriptContext) {
+
+    }
+
+    /**
+     * Function definition to be triggered before record is loaded.
+     *
+     * @param {Object} scriptContext
+     * @param {Record} scriptContext.newRecord - New record
+     * @param {Record} scriptContext.oldRecord - Old record
+     * @param {string} scriptContext.type - Trigger type
+     * @Since 2015.2
+     */
+    function afterSubmit(scriptContext) {
+
+    }
+
+    return {
+        beforeLoad: beforeLoad,
+        //beforeSubmit: beforeSubmit,
+        //afterSubmit: afterSubmit
+    };
+    
+});
+
+/**
+ * @NApiVersion 2.x
+ * @NScriptType ClientScript
+ * @NModuleScope SameAccount
+ */
+define(['N/url'],
+
+function(url) {
+    
+    /**
+     * Function to be executed after page is initialized.
+     *
+     * @param {Object} scriptContext
+     * @param {Record} scriptContext.currentRecord - Current form record
+     * @param {string} scriptContext.mode - The mode in which the record is being accessed (create, copy, or edit)
+     *
+     * @since 2015.2
+     */
+    function pageInit(scriptContext) {
+
+    }
+
+    function redirectToValiantWeeklyPrint(invId){
+    	try{
+    		var output = url.resolveScript({
+    			scriptId: 'customscript_amz_su_invoice_pdf_screens',
+    			deploymentId: 'customdeploy_amz_su_invoice_pdf_screens',
+    			params :{custom_invid : invId}
+    		});
+    		window.open(output,'_blank');
+    	}catch(ex){
+    		log.error(ex.name,ex.message)
+    	}
+
+    }
+
+    return {
+        pageInit: pageInit,
+        redirectToValiantWeeklyPrint : redirectToValiantWeeklyPrint
+        /*fieldChanged: fieldChanged,
+        postSourcing: postSourcing,
+        sublistChanged: sublistChanged,
+        lineInit: lineInit,
+        validateField: validateField,
+        validateLine: validateLine,
+        validateInsert: validateInsert,
+        validateDelete: validateDelete,
+        saveRecord: saveRecord*/
+    };
+    
+});
+
+
+
+/**
+ * @NApiVersion 2.x
+ * @NScriptType Suitelet
+ * @NModuleScope SameAccount
+ */
+define(['N/record', 'N/search', 'N/render', 'N/config', 'N/file'],
+
+    function (record, search, render, config, file) {
+
+        /**
+         * Definition of the Suitelet script trigger point.
+         *
+         * @param {Object} context
+         * @param {ServerRequest} context.request - Encapsulation of the incoming request
+         * @param {ServerResponse} context.response - Encapsulation of the Suitelet response
+         * @Since 2015.2
+         */
+        function onRequest(context) {
+            try {
+                var request = context.request;
+                var response = context.response;
+                var parameters = context.request.parameters;
+                //log.debug('parameters',parameters);
+                var myTemplate;
+                var imageUrl;
+                if (request.method == "GET") {
+
+                    var invoiceRec = record.load({
+                        type: record.Type.INVOICE,
+                        id: parameters.custom_invid
+                    });
+                    //log.debug('invoiceRec',invoiceRec);
+                    var jobId = invoiceRec.getValue('job');
+                    //log.debug('jobId',jobId);
+                    myTemplate = render.create();
+                    var finalResults = [];
+                    myTemplate.setTemplateByScriptId({
+                       //scriptId: "CUSTTMPL_AMZ_METRO_INVOICE_VALIANT_WEEKLY_BILL_PDF_TMPT"
+                        scriptId: "CUSTTMPL_TEST_SUITELET"
+                    });
+
+                    var lines = invoiceRec.getLineCount({
+                        sublistId: 'time'
+                    });
+
+                    var durationObj = {};
+                    var durationArr = [];
+                    var taskArr = [];
+                    var amountArr =[];
+                    var durSubTotalreg = 0.00;
+                    var durSubTotalot = 0.00;
+                    var durSubTotalhol = 0.00;
+                    var durSubTotalamount = 0.00;
+                    var durSubTotalArr = [];
+                    var totalArray = [];
+                    var totalJson = {};
+                    var total_reg = 0.00;
+                    var total_ot = 0.00;
+                    var total_holiday = 0.00;
+                    var tempUnique = [];
+                    for (i = 0; i < lines; i++) {
+                        var apply = invoiceRec.getSublistText({
+
+                            sublistId: 'time',
+                            fieldId: 'apply',
+                            line: i
+                        });
+                        if (apply == "T") {
+                            var roleId = "NA";
+                            roleId = getRole(invoiceRec);
+                            tempUnique.push(roleId);
+                            var durationtemp = invoiceRec.getSublistValue({
+
+                                sublistId: 'time',
+                                fieldId: 'quantity',
+                                line: i
+                            });
+                            durationArr.push(durationtemp);
+                          var amounttemp = invoiceRec.getSublistValue({
+
+                                sublistId: 'time',
+                                fieldId: 'amount',
+                                line: i
+                            });
+                            amountArr.push(amounttemp);
+                            var task = invoiceRec.getSublistValue({
+
+                                sublistId: 'time',
+                                fieldId: 'cseg1',
+                                line: i
+                            });
+                            taskArr.push(task);
+                        }//if apply true 
+
+                    }//for loop ends 
+                    var unique = tempUnique.filter(uniqueFunc);
+                    log.debug('unique', unique);
+                    //  log.debug("unique.length",unique.length); log.debug("tempUnique.length",tempUnique.length);
+                    for (var j = 0; j < unique.length; j++) {
+                        durSubTotalreg = 0.00; durSubTotalot = 0.00; durSubTotalhol = 0.00;durSubTotalamount =0.00;
+                        durationObj = {};
+                        for (var k = 0; k < tempUnique.length; k++) {
+                            if (unique[j] == tempUnique[k]) {
+                                var prefixQty = parseInt(durationArr[k].split(":")[0]);
+                                var postQty = parseInt(durationArr[k].split(":")[1]) / 60;
+                                var formattedquantity = prefixQty + postQty;
+                                if (isNaN(postQty)) {
+                                    log.debug('sub NaN', durationArr[k] + "---" + prefixQty + "---" + postQty + "---" + formattedquantity);
+                                    postQty = parseInt(durationArr[k].split(":")[1].replace("0", '')) / 60
+                                    var formattedquantity = prefixQty + postQty;
+                                    log.debug('sub NaN', durationArr[k] + "---" + prefixQty + "---" + postQty + "---" + formattedquantity);
+                                }//	7:09---7---NaN---NaN
+                                var temp = formattedquantity.toFixed(2);
+                                // log.debug("durSubTotal",durSubTotal);log.debug("durationArr[k]",durationArr[k]);
+                                if (taskArr[k] == 4 || taskArr[k] == "NON-OT") { durSubTotalreg = durSubTotalreg + parseFloat(temp); }
+                                else if (taskArr[k] == 3 || taskArr[k] == "OT") { durSubTotalot = durSubTotalot + parseFloat(temp); }
+                                else { durSubTotalhol = durSubTotalhol + parseFloat(temp); }
+                              durSubTotalamount = durSubTotalamount + amountArr[k];
+                            }
+
+                        }//for k loop ends  
+                        durationObj.name = unique[j];
+                        durationObj.reg = durSubTotalreg.toFixed(2);
+                        durationObj.ot = durSubTotalot.toFixed(2);
+                        durationObj.hol = durSubTotalhol.toFixed(2);
+                        durationObj.amount = durSubTotalamount.toFixed(2);
+                        durSubTotalArr.push(durationObj);
+                      
+                        // log.debug("durSubTotalArr",durSubTotalArr );
+
+                    }//for j loop ends    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                    for (i = 0; i < lines; i++) {
+                        var source = {};
+                        var apply = invoiceRec.getSublistText({
+
+                            sublistId: 'time',
+                            fieldId: 'apply',
+                            line: i
+                        });
+
+                        // log.debug('apply',apply);
+                        if (apply == "T") {
+
+
+
+                            var empic = invoiceRec.getSublistValue({
+
+                                sublistId: 'time',
+                                fieldId: 'employeedisp',
+                                line: i
+                            });
+
+                            // log.debug('emp name',empic);
+                            source.employeeText = empic;
+
+                            var date = invoiceRec.getSublistText({
+
+                                sublistId: 'time',
+                                fieldId: 'billeddate',
+                                line: i
+                            });
+
+                            //log.debug('bill date',date);
+                            source.date = date;
+                            var casetaskevent = invoiceRec.getSublistValue({
+
+                                sublistId: 'time',
+                                fieldId: 'cseg1',
+                                line: i
+                            });
+
+                            //log.debug('casetaskevent',casetaskevent);
+                            //source.casetaskevent = casetaskevent;
+                            var duration = invoiceRec.getSublistValue({
+
+                                sublistId: 'time',
+                                fieldId: 'quantity',
+                                line: i
+                            });
+                            // if(isNaN(duration))
+                            //log.debug('duration',duration + "---" + i);
+                            // source.duration = duration;
+                            if (casetaskevent == 4 || casetaskevent == "NON-OT") {
+                                var prefixQty = parseInt(duration.split(":")[0]);
+                                var postQty = parseInt(duration.split(":")[1]) / 60;
+                                var formattedquantity = prefixQty + postQty;
+                                if (isNaN(postQty)) {
+                                    log.debug('NaN', duration + "---" + prefixQty + "---" + postQty + "---" + formattedquantity);
+                                    postQty = parseInt(duration.split(":")[1].replace("0", '')) / 60
+                                    var formattedquantity = prefixQty + postQty;
+                                    log.debug('NaN', duration + "---" + prefixQty + "---" + postQty + "---" + formattedquantity);
+                                }//	7:09---7---NaN---NaN
+
+                                var temp = formattedquantity.toFixed(2);
+
+                                source.regular = temp;
+                                source.ot = "0.00";
+                                source.holiday = "0.00";
+                                total_reg += parseFloat(temp);
+                            } else if (casetaskevent == 3 || casetaskevent == "OT") {
+                                var prefixQty = parseInt(duration.split(":")[0]);
+                                var postQty = parseInt(duration.split(":")[1]) / 60;
+                                var formattedquantity = prefixQty + postQty;
+                                var temp = formattedquantity.toFixed(2);
+                                source.regular = "0.00";
+                                source.ot = temp;
+                                source.holiday = "0.00";
+                                total_ot += parseFloat(temp);
+                            } else {
+                                var prefixQty = parseInt(duration.split(":")[0]);
+                                var postQty = parseInt(duration.split(":")[1]) / 60;
+                                var formattedquantity = prefixQty + postQty;
+                                var temp = formattedquantity.toFixed(2);
+                                source.regular = "0.00";
+                                source.ot = "0.00";
+                                source.holiday = temp;
+                                total_holiday += parseFloat(temp);
+                            }
+
+                            var memo = invoiceRec.getSublistValue({
+
+                                sublistId: 'time',
+                                fieldId: 'memo',
+                                line: i
+                            });
+
+                            //log.debug('memo',memo);
+                            source.memo = memo;
+                            var custcol_amount = invoiceRec.getSublistValue({
+
+                                sublistId: 'time',
+                                fieldId: 'amount',
+                                line: i
+                            });
+                            // log.debug('custcol_amount',custcol_amount);
+                            source.amount = custcol_amount.toFixed(2);
+                            var rate = invoiceRec.getSublistValue({
+
+                                sublistId: 'time',
+                                fieldId: 'rate',
+                                line: i
+                            });
+
+                            // log.debug('rate',rate);
+                            source.baseprice = rate.toFixed(2);
+                            var roleId = "NA";
+                            roleId = getRole(invoiceRec);
+                            source.role = roleId;
+
+
+
+                            finalResults.push(source);
+                            tempUnique.push(roleId);
+
+                        }// if T ends
+
+
+
+
+
+
+
+                    }//for loop end
+
+                    //log.debug('lines',lines);
+
+                    totalJson.regTotal = total_reg.toFixed(2);
+                    totalJson.otTotal = total_ot.toFixed(2);
+                    totalJson.holTotal = total_holiday.toFixed(2);
+                    log.debug('total_reg', total_reg);
+                    log.debug('totalJson', totalJson);
+                    totalArray.push(totalJson);
+
+                    /*
+                    if(jobId){
+                        var jobSearchObj = search.create({
+                            type: "job",
+                            filters:
+                                [
+                                 ["internalid","anyof",jobId]
+                                 ],
+                                 columns:
+                                     [
+                                      search.createColumn({
+                                          name: "casetaskevent",
+                                          join: "time",
+                                          label: "Case/Task/Event"
+                                      }),
+                                      search.createColumn({
+                                          name: "date",
+                                          join: "time",
+                                          label: "Date"
+                                      }),
+                                      search.createColumn({
+                                          name: "hours",
+                                          join: "time",
+                                          label: "Duration"
+                                      }),
+                                      search.createColumn({
+                                             name: "item",
+                                             join: "time",
+                                             label: "Item"
+                                          }),
+                                      search.createColumn({
+                                             name: "employee",
+                                             join: "time",
+                                             label: "employee_name"
+                                          }),
+                                      search.createColumn({
+                                             name: "custcol_base_price",
+                                             join: "time",
+                                             label: "baseprice"
+                                          }),
+                                      search.createColumn({
+                                             name: "custcol_amount",
+                                             join: "time",
+                                             label: "amount"
+                                          })	  
+                                      ]
+                        });
+                        jobSearchObj.run().each(function(result){
+                            var source={};
+                            var regular,ot,holiday;
+                               log.debug('result',result)
+                               source.date = result.getValue({
+                                      name: "date",
+                                      join: "time",
+                                      label: "Date"
+                                  });
+                             var duration = result.getValue({
+                                      name: "hours",
+                                      join: "time",
+                                      label: "Duration"
+                                  });
+                               source.employeeText = result.getText({                                 
+                                      name: "employee",
+                                      join: "time",
+                                      label: "employee_name"
+                                  });
+                                  source.baseprice = result.getValue({
+                                             name: "custcol_base_price",
+                                             join: "time",
+                                             label: "baseprice"
+                                          });
+                                  source.amount = result.getValue({
+                                             name: "custcol_amount",
+                                             join: "time",
+                                             label: "amount"
+                                          });
+                               var casetaskevent = result.getValue({
+                                      name: "cseg1",
+                                      join: "time",
+                                      label: "Case/Task/Event"
+                                  });
+                               
+                               if(casetaskevent == 4){
+                                   source.regular  = duration;
+                                   source.ot = "0.00";
+                                   source.holiday ="0.00" ;
+                               }else if(casetaskevent == 3){
+                                   source.regular  = "0.00";
+                                   source.ot = duration;
+                                   source.holiday ="0.00" 
+                               }else{
+                                   source.regular  = "0.00";
+                                   source.ot = "0.00";
+                                   source.holiday =duration;  
+                               }
+                             /*  source.item = result.getValue({
+                                     name: "item",
+                                     join: "time",
+                                     label: "Item"
+                                  });
+                                  */
+                    //baseprice
+
+                    /*		   
+                              finalResults.push(source);
+                              return true;
+                           });
+                       log.debug('finalResults',finalResults)
+                   }
+                   */
+
+                    var imageUrl;
+                    //loading the account configuration
+                    var configRecObj = config.load({
+                        type: config.Type.COMPANY_INFORMATION
+                    });
+                  log.debug("config obj",configRecObj);
+                  var companyname = configRecObj.getValue('companyname');
+                  var companyaddress  = configRecObj.getValue('mainaddress_text');
+                  if (0) {
+                        myTemplate.addCustomDataSource({
+                            format: render.DataSource.OBJECT,
+                            alias: "companyname",
+                            data: companyname
+                        });
+                    }
+                  if (0) {
+                        myTemplate.addCustomDataSource({
+                            format: render.DataSource.OBJECT,
+                            alias: "companyaddress",
+                            data: companyaddress
+                        });
+                    }
+                    /******* Gets the companyLogo and place it in the header  *******/
+                    var fileObj = file.load({
+                        id: 2644//2642//configRecObj.getValue('formlogo')
+                    }),
+                        imageUrl = { urlPath: fileObj.url.replace(/&/g, '&amp;') }
+                    //log.debug('fileObj',fileObj.url.replace(/&/g,'&amp;'));
+
+                    if (imageUrl) {
+                        myTemplate.addCustomDataSource({
+                            format: render.DataSource.OBJECT,
+                            alias: "imageObj",
+                            data: imageUrl
+                        });
+                    }
+                    if (totalJson) {
+                        myTemplate.addCustomDataSource({
+                            format: render.DataSource.OBJECT,
+                            alias: "totalObj",
+                            data: { timetotal: totalArray }
+                        });
+                    }
+                    if (durSubTotalArr) {
+                        myTemplate.addCustomDataSource({
+                            format: render.DataSource.OBJECT,
+                            alias: "subtotalObj",
+                            data: { subtotal: durSubTotalArr }
+                        });
+                    }
+
+                    myTemplate.addRecord('record', invoiceRec);
+                    myTemplate.addCustomDataSource({
+                        format: render.DataSource.OBJECT,
+                        alias: "dataObj",
+                        data: { timelist: finalResults }
+                    });
+                    log.debug('myTemplate', myTemplate);
+                    template = myTemplate.renderAsPdf();
+                    log.debug('template', template);
+                    context.response.writeFile(template, true);
+                }
+            } catch (ex) {
+                log.error(ex.name, ex.message)
+            }
+        }
+        function getRole(invoiceRec) {//get project names
+            var str = invoiceRec.getSublistValue({
+
+                sublistId: 'time',
+                fieldId: 'itemdisp',
+                line: i
+            });
+            var res = str.split("/");
+            var len = res.length;
+            var sub = len - 1
+            var hashtag = (res[sub].match(/NON-OT/g)) ? res[sub].replace("NON-OT", "") : res[sub].replace("OT", "");
+            //log.debug("hashtag",hashtag);
+            return hashtag
+
+        }// get role ends
+        function uniqueFunc(value, index, self) {//Get all unique values in a JavaScript array (remove duplicates)
+            return self.indexOf(value) === index;
+        }//unique
+
+
+        return {
+            onRequest: onRequest
+        };
+
+    });
