@@ -1,0 +1,43 @@
+require(['N/record'],function(record){
+ log.debug("hours", roundingRule("8.63"));
+ function roundingRule(cust_hours){
+            var input = cust_hours;
+                           var mts = Math.round((input * 60) % 60);
+                           log.debug(input);
+                           var inputstr = input.toString();
+                           var d = inputstr;
+                           var prefixQty = parseInt(d.split(".")[0]);
+         
+                           var postQty = mts;
+         
+                           var n = postQty;
+         
+                           var nearest_minutes = 0
+         
+         
+                           if (n >= 0 && n <= 7) {
+                               nearest_minutes = 0;
+                           }
+                           if (n > 7 && n <= 22) {
+                               nearest_minutes = 25;
+                           }
+                           if (n > 22 && n <= 37) {
+                               nearest_minutes = 50;
+                           }
+                           if (n > 37 && n <= 52) {
+                               nearest_minutes = 75;
+                           }
+                           if (n > 52 && n <= 60) {
+                               prefixQty += 1
+                               nearest_minutes = 0;
+                           }
+         
+         
+         
+                           postQty = nearest_minutes;
+                           var hours = prefixQty + (postQty) / 100;
+            return hours;
+        }
+
+ 
+});
