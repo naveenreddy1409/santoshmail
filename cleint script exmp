@@ -1,0 +1,147 @@
+/**
+ *@NApiVersion 2.x
+ *@NScriptType ClientScript
+ */
+define(
+    ['N/record','N/search'
+        
+    ],
+    function (record,search) {
+
+        /**
+        * @param {ClientScriptContext.fieldChanged} context
+        */
+        function fieldChanged(context) {
+            vendorbill(context);
+        }
+
+        // /**
+        // * @param {ClientScriptContext.lineInit} context
+        // */
+        // function lineInit(context) {
+        //
+        // }
+
+        /**
+        * @param {ClientScriptContext.pageInit} context
+        */
+        function pageInit(context) {
+            log.debug("page init");
+        
+        }
+
+        // /**
+        // * @param {ClientScriptContext.postSourcing} context
+        // */
+        // function postSourcing(context) {
+        //
+        // }
+
+        // /**
+        // * @param {ClientScriptContext.saveRecord} context
+        // */
+        // function saveRecord(context) {
+        //
+        // }
+
+        // /**
+        // * @param {ClientScriptContext.sublistChanged} context
+        // */
+        // function sublistChanged(context) {
+        //
+        // }
+
+        // /**
+        // * @param {ClientScriptContext.validateDelete} context
+        // */
+        // function validateDelete(context) {
+        //    return true;
+        // }
+
+        // /**
+        // * @param {ClientScriptContext.validateField} context
+        // */
+        // function validateField(context) {
+        //    return true;
+        // }
+
+        // /**
+        // * @param {ClientScriptContext.validateInsert} context
+        // */
+        // function validateInsert(context) {
+        //    return true;
+        // }
+
+        // /**
+        // * @param {ClientScriptContext.validateLine} context
+        // */
+        // function validateLine(context) {
+        //    return true;
+        // }
+        function vendorbill(scriptContext){
+            var rec = scriptContext.currentRecord;
+                        log.debug('currentRecord', rec);
+                        var sublistName = scriptContext.sublistId;
+                        log.debug('sublistName', sublistName);
+                        var sublistFieldName = scriptContext.fieldId;
+                        log.debug('sublistFieldName', sublistFieldName);
+                        if (sublistName === 'item' && sublistFieldName === 'custcol1') {
+                            var emp_id = rec.getCurrentSublistValue({
+                                sublistId: sublistName,
+                                fieldId: 'custcol1'
+                            });
+                            if (!emp_id) return true;
+        					
+                            var savedsearch = search.lookupFields({
+                                type: search.Type.EMPLOYEE,
+                                id: emp_id,
+                                columns: ['location', 'subsidiary', 'department']
+                            });
+                            log.debug('savedsearch search', savedsearch);
+        
+        					if(savedsearch.length){
+                            var location = savedsearch.location[0].value;
+                            log.debug('location', location);
+                            if(location){
+                            var x = rec.setCurrentSublistValue({
+                                sublistId: sublistName,
+                                fieldId: 'location',
+                                value: location,
+                                ignoreFieldChange: true,
+                                forceSyncSourcing: true
+                            });
+                            log.debug('x', x);}}
+        
+        					if(savedsearch.length){
+                            var dept = savedsearch.department[0].value;
+                            log.debug('dept', dept);
+                            if(dept){
+                            var z = rec.setCurrentSublistValue({
+                                sublistId:sublistName,
+                                fieldId: 'department',
+                                value: dept,
+                                ignoreFieldChange: true,
+                                forceSyncSourcing: true
+                            });
+                            log.debug('z', z);}}
+        
+        					
+        					
+        
+                        }
+                        return true;
+          }
+
+        return {
+            fieldChanged: fieldChanged,
+            // lineInit: lineInit,
+            pageInit: pageInit,
+            // postSourcing: postSourcing,
+            // saveRecord: saveRecord,
+            // sublistChanged: sublistChanged,
+            // validateDelete: validateDelete,
+            // validateField: validateField,
+            // validateInsert: validateInsert,
+            // validateLine: validateLine
+        };
+    });
