@@ -1,0 +1,183 @@
+hard code values and restlet script
+
+{"name":"2648","memo":"to buy a an IT equipment","category":8,"currency":1,"foreignamount":100,"equipment":"headphnes","department":5}
+
+
+
+/**
+ * @NApiVersion 2.x
+ * @NScriptType Restlet
+ * @NModuleScope Sa meAccount
+ */
+define(['N/record'],
+/**
+ * @param {record} record
+ */
+function(record) {
+   
+    /**
+     * Function called upon sending a GET request to the RESTlet.
+     *
+     * @param {Object} requestParams - Parameters from HTTP request URL; parameters will be passed into function as an Object (for all supported content types)
+     * @returns {string | Object} HTTP response body; return string when request Content-Type is 'text/plain'; return Object when request Content-Type is 'application/json'
+     * @since 2015.1
+     */
+    function doGet(requestParams) {
+    
+
+    }
+
+    /**
+     * Function called upon sending a PUT request to the RESTlet.
+     *
+     * @param {string | Object} requestBody - The HTTP request body; request body will be passed into function as a string when request Content-Type is 'text/plain'
+     * or parsed into an Object when request Content-Type is 'application/json' (in which case the body must be a valid JSON)
+     * @returns {string | Object} HTTP response body; return string when request Content-Type is 'text/plain'; return Object when request Content-Type is 'application/json'
+     * @since 2015.2
+     */
+    function doPut(requestBody) {
+
+    }
+
+
+    /**
+     * Function called upon sending a POST request to the RESTlet.
+     *
+     * @param {string | Object} requestBody - The HTTP request body; request body will be passed into function as a string when request Content-Type is 'text/plain'
+     * or parsed into an Object when request Content-Type is 'application/json' (in which case the body must be a valid JSON)
+     * @returns {string | Object} HTTP response body; return string when request Content-Type is 'text/plain'; return Object when request Content-Type is 'application/json'
+     * @since 2015.2
+     */
+    function doPost(request) {
+    
+    //	log.debug('request',request);
+     
+   //   createExpenseReport(request);
+     
+      
+      var expense = createExpenseReport(request);
+      log.debug('expense',expense);
+            
+    
+            
+            
+    
+
+          
+          return {status:"success"};
+   //   request = JSON.stringify(createExpenseReport);
+    //  var myresponse = JSON.parse(createExpenseReport);
+    //      createExpenseReport(request);
+            
+      
+      
+    }
+
+    /**
+     * Function called upon sending a DELETE request to the RESTlet.
+     *
+     * @param {Object} requestParams - Parameters from HTTP request URL; parameters will be passed into function as an Object (for all supported content types)
+     * @returns {string | Object} HTTP response body; return string when request Content-Type is 'text/plain'; return Object when request Content-Type is 'application/json'
+     * @since 2015.2
+     */
+    function doDelete(requestParams) {
+
+    }
+    
+        function createExpenseReport(request){
+            log.debug('post body',request);
+           var name1= request.name;
+      var memo1= request.memo;
+      var category1= request.category;
+      var currency1= request.currency;
+      var equipment1= request.equipment;
+      var foreignamount1= request.foreignamount;
+      var department1= request.department;
+      
+    
+    	log.debug('name1',name1);
+    	log.debug('memo1',memo1);
+    	log.debug('category1',category1);
+    	log.debug('currency1',currency1);
+        log.debug('equipment1',equipment1);
+      log.debug('foreignamount1',foreignamount1);
+        log.debug('department1',department1);
+  
+          var er = record.create({
+                type: 'expensereport',
+                isDynamic: true,
+         //       defaultValues:{
+         //       	entity: 2648
+                });
+          er.setValue({
+                fieldId: 'entity',
+                value: name1// 2648
+            });
+          
+            
+           er.setValue({
+                fieldId: 'expensedate',
+                value: new Date("02/23/2021")
+            });
+           
+            er.setValue({
+                fieldId: 'memo',
+                value: memo1      //'to buy a an IT equipment'
+            });
+            
+        var test =   er.selectNewLine({
+            	sublistId: 'expense'
+        	});
+            
+           
+            
+            test.setCurrentSublistValue({             
+                sublistId: 'expense',
+                fieldId: 'category',
+                value:category1 // 8
+            });
+            
+            test.setCurrentSublistValue({
+                sublistId: 'expense',
+                fieldId: 'currency',
+                value: currency1   // 1
+            });
+            
+            test.setCurrentSublistValue({
+                sublistId: 'expense',
+                fieldId: 'foreignamount',
+                value: foreignamount1  //100.00
+            });
+            
+            test.setCurrentSublistValue({
+                sublistId: 'expense',
+                fieldId: 'memo',
+                value: equipment1  // "headphones"
+            });
+            
+            test.setCurrentSublistValue({
+                sublistId: 'expense',
+                fieldId: 'department',
+                value: department1   //5
+            });
+            
+            test.commitLine({
+                sublistId: 'expense'
+            });
+           
+            
+       var x =     er.save();
+ log.debug("x",x);
+     
+            
+           
+        }
+
+    return {
+ //       'get': doGet,
+  //      put: doPut,
+        post: doPost
+ //       'delete': doDelete
+    };
+    
+        });
