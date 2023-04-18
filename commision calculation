@@ -1,0 +1,328 @@
+/**
+ * @NApiVersion 2.x
+ * @NScriptType UserEventScript
+ * @NModuleScope SameAccount
+ */
+define(['N/record','N/search','N/runtime'],
+/**
+* @param {search} search
+* @param {record} record
+*/
+function(record,search,runtime) {
+   
+    /**
+     * Function definition to be triggered before record is loaded.
+     *
+     * @param {Object} scriptContext
+     * @param {Record} scriptContext.newRecord - New record
+     * @param {string} scriptContext.type - Trigger type
+     * @param {Form} scriptContext.form - Current form
+     * @Since 2015.2
+     */
+    function beforeLoad(scriptContext) {
+
+    }
+
+    /**
+     * Function definition to be triggered before record is loaded.
+     *
+     * @param {Object} scriptContext
+     * @param {Record} scriptContext.newRecord - New record
+     * @param {Record} scriptContext.oldRecord - Old record
+     * @param {string} scriptContext.type - Trigger type
+     * @Since 2015.2
+     */
+    function beforeSubmit(scriptContext) {
+
+    }
+
+    /**
+     * Function definition to be triggered before record is loaded.
+     *
+     * @param {Object} scriptContext
+     * @param {Record} scriptContext.newRecord - New record
+     * @param {Record} scriptContext.oldRecord - Old record
+     * @param {string} scriptContext.type - Trigger type
+     * @Since 2015.2
+     */
+    function afterSubmit(scriptContext) {
+       
+        try{
+               var empid = [];
+                       if (scriptContext.type == scriptContext.UserEventType.DELETE)
+                           return;
+         
+                     
+                       var invRec = record.load({
+                           type:record.Type.INVOICE,
+                           id: scriptContext.newRecord.id
+                       });
+          log.debug("invRec",invRec);
+                       var profit_percent_sum = invRec.getValue('estgrossprofitpercent');
+          log.debug("profit_percent_sum",profit_percent_sum);
+
+                       var profit_amount_sum = invRec.getValue('estgrossprofit');
+          log.debug("profit_amount_sum",profit_amount_sum);
+                       var lines = invRec.getLineCount({
+                                   sublistId: 'salesteam'
+                       });
+          log.debug("lines",lines);
+         
+
+                              for (i = 0; i < lines; i++) {
+                                var primary =  invRec.getSublistValue({
+
+                                      sublistId: 'salesteam',
+                                      fieldId: 'isprimary',
+                                      line: i
+                                  });
+                                if(primary){
+                                   empid.push(invRec.getSublistValue({
+
+                                      sublistId: 'salesteam',
+                                      fieldId: 'employee',
+                                      line: i
+                                  }))
+
+                                }
+                               
+                              }//for loop
+
+                                 
+
+                             
+                       var fieldLookUp = search.lookupFields({
+                                       type: search.Type.EMPLOYEE,
+                                       id: empid[0],
+                                       columns: ['custentity_amz_sales_profit_1', 'custentity_amz_sales_profit_2', 'custentity_amz_sales_profit_3']
+                        });
+          log.debug("fieldLookUp",fieldLookUp);
+
+                       if(profit_percent_sum <20 ){
+
+                            var salesRate = fieldLookUp['custentity_amz_sales_profit_1'];
+                         log.debug("salesRate",salesRate);
+                         
+
+                       }else if(profit_percent_sum > 20 && profit_percent_sum <40){
+
+                            var salesRate = fieldLookUp['custentity_amz_sales_profit_2'];
+                         log.debug("salesRate1",salesRate);
+
+                       }else{
+
+                            var salesRate = fieldLookUp['custentity_amz_sales_profit_3'];  
+                         log.debug("salesRate2",salesRate);
+
+                       }
+
+                       var commision = (parseFloat(salesRate) / 100.0 * profit_amount_sum) ;
+                       log.debug("commision", commision);
+         
+         
+         
+         
+
+                        invRec.setValue({
+                            fieldId: "custbody_amz_commission",
+                            value: commision
+                        });
+                        invRec.setValue({
+                            fieldId: "custbody_amz_sales_rate",
+                            value: ((parseFloat(salesRate) / 100.0 )* 100.0)
+                        });
+                        var itemlineCount = invRec.getLineCount({sublistId: 'item'});
+          log.debug("itemlineCount",itemlineCount);
+         
+var mySearch = search.create({
+  type: "invoice",
+  filters: [
+    {
+      "name": "type",
+      "operator": "anyof",
+      "values": [
+        "CustInvc"
+      ]
+    },
+    {
+      "name": "internalid",
+      "operator": "anyof",
+      "values": [
+        scriptContext.newRecord.id
+      ]
+    },
+    {
+      "name": "mainline",
+      "operator": "is",
+      "values": [
+        "F"
+      ]
+    },
+    {
+      "name": "shipping",
+      "operator": "is",
+      "values": [
+        "F"
+      ]
+    },
+    {
+      "name": "taxline",
+      "operator": "is",
+      "values": [
+        "F"
+      ]
+    },
+    {
+      "name": "cogs",
+      "operator": "is",
+      "values": [
+        "F"
+      ]
+    }
+  ],
+  columns: [
+    {
+      "name": "transactionnumber",
+      "label": "Transaction Number",
+      "type": "text",
+      "sortdir": "NONE"
+    },
+    {
+      "name": "item",
+      "label": "Item",
+      "type": "select",
+      "sortdir": "NONE"
+    },
+    {
+      "name": "amount",
+      "label": "Amount",
+      "type": "currency",
+      "sortdir": "NONE"
+    },
+    {
+      "name": "estgrossprofitpct",
+      "label": "gross margin percentage",
+      "type": "percent",
+      "sortdir": "NONE"
+    },
+    {
+      "name": "estgrossprofit",
+      "label": "amount",
+      "type": "currency",
+      "sortdir": "NONE"
+    },
+    {
+      "name": "tranestgrossprofit",
+      "label": "Est. Gross Profit (Transaction)",
+      "type": "currency",
+      "sortdir": "NONE"
+    },
+    {
+      "name": "totalcostestimate",
+      "label": "Est. Extended Cost (Transaction)",
+      "type": "currency",
+      "sortdir": "NONE"
+    }
+  ]
+});
+        // log.debug('mySearch',mySearch);
+         var searchResult = mySearch.run().getRange({
+            start: 0,
+            end: 50
+            });
+         
+         
+       
+                        for(i=0; i<itemlineCount; i++){  //loop started
+                       
+                       
+                       
+                 
+                                 var entity = searchResult[i].getValue({
+                                     name: 'estgrossprofit'
+                                 });
+                                 var percentage = searchResult[i].getValue({
+                                     name: 'estgrossprofitpct'
+                                 });
+                          log.debug('entity',entity);
+                          log.debug('percentage',percentage);
+                   
+                         var subsidiary =(parseFloat(percentage) / 100.0)*100;
+                         log.debug('subsidiary',subsidiary);
+                             
+                                if(subsidiary >=0 &&  subsidiary <=20 ){
+
+                                    var salesRate_item = fieldLookUp['custentity_amz_sales_profit_1'];
+                                 log.debug("salesRate",salesRate_item);
+                                 
+
+                               }else if(subsidiary > 21 && subsidiary <= 27){
+
+                                    var salesRate_item = fieldLookUp['custentity_amz_sales_profit_2'];
+                                 log.debug("salesRate1",salesRate_item);
+
+                               }else if(subsidiary > 27){
+
+                                    var salesRate_item = fieldLookUp['custentity_amz_sales_profit_3'];  
+                                 log.debug("salesRate2",salesRate_item);
+
+                               }
+                 var sales_percent = (parseFloat(salesRate_item) / 100.0 * 100);
+                               var commision_item = (sales_percent/100) * entity;
+                           log.debug("commision_item",commision_item);
+                           log.debug("sales_percent",sales_percent);
+                   try{      
+                         invRec.setSublistValue({
+                                    sublistId: 'item',
+                                    fieldId: 'custcol_dfs_sales_rate',
+                                    line :i,
+                                    value:sales_percent
+                                });
+                     log.debug("sales_percent1",sales_percent);
+                   }catch(ex){
+                     log.error('salesrate',ex)
+                   }
+                                 
+                try{      
+                      invRec.setSublistValue({
+                                    sublistId: 'item',
+                                    fieldId:'custcol_amz_commission_amount',
+                                    line :i,
+                                    value: commision_item
+                                });
+                }catch(ex){
+                  log.error('commision_item',ex)
+                }  
+                             
+                           
+                       
+                       
+                       
+                                 
+
+
+                        }//loop ends
+         
+          invRec.save({
+                            ignoreMandatoryFields:true,
+                            enableSourcing:false
+                        });
+
+                       
+                         var remainingUsage = runtime.getCurrentScript().getRemainingUsage();
+                          log.debug('remainingUsage',remainingUsage);
+ 
+         
+                   }catch(ex){
+                         log.error(ex.name,ex.message)
+                       }
+
+    }
+
+    return {
+      //  beforeLoad: beforeLoad,
+      //  beforeSubmit: beforeSubmit,
+        afterSubmit: afterSubmit
+    };
+   
+});
