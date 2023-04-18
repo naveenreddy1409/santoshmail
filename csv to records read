@@ -1,0 +1,369 @@
+/**
+ * @NApiVersion 2.x
+ * @NScriptType MapReduceScript
+ * @NModuleScope SameAccount
+ */
+define(["N/record", "N/http", "N/search", "N/file", "N/task"],
+
+    function (record, http, search, file, task) {
+
+        /**
+         * Marks the beginning of the Map/Reduce process and generates input data.
+         *
+         * @typedef {Object} ObjectRef
+         * @property {number} id - Internal ID of the record instance
+         * @property {string} type - Record type id
+         *
+         * @return {array|Object|Search|RecordRef} inputSummary
+         * @since 2015.1
+         */
+        function getInputData() {
+            // var token = login();
+            //   var headers = {
+            //      'accept': '*/*',
+            //      'Accept-Encoding': 'gzip, deflate, br',
+            //      'Connection': 'keep-alive',
+            //      'Content-Type': 'application/json',
+            //     'Authentication': 'Bearer ' + token + "",
+            //  };
+            //    var response_stage1 = http.get({
+            // url: "http://secure.entertimeonline.com/ta/rest/v1/company/rate-tables",
+            //       url : "http://secure.entertimeonline.com/ta/rest/v1/report/global/REPORT_ALL_COST_CENTERS",
+            // url:"http://secure.entertimeonline.com/ta/rest/v1/reports?type=REPORT_ALL_COST_CENTERS",
+            //        headers: headers
+            //    });
+            //   log.debug("response_stage1",response_stage1);
+            /* var fileObj = file.create({
+        name: 'test.csv',
+        fileType: file.Type.CSV,
+       // contents: response_stage1,
+        contents: response_stage1.body,//.toString()
+        encoding: file.Encoding.UTF8,
+        folder: 864,
+        isOnline: true
+       }).save();
+              var scriptTask = task.create({taskType: task.TaskType.CSV_IMPORT});
+       scriptTask.mappingId = 'custimport_report_all_cost_centers';
+       var f = file.load(fileObj);
+       scriptTask.importFile = f;
+       //scriptTask.linkedFiles = {'addressbook': 'street,city\nval1,val2', 'purchases': file.load('SuiteScripts/other.csv')};
+       
+       var csvImportTaskId = scriptTask.submit();*/
+            var token = login();
+            var headers = {
+                'accept': '*/*',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Connection': 'keep-alive',
+                'Content-Type': 'application/json',
+                'Authentication': 'Bearer ' + token + "",
+
+            };
+            var response_stage1 = http.get({
+                // url: "http://secure.entertimeonline.com/ta/rest/v1/company/rate-tables",
+                //    url : "http://secure.entertimeonline.com/ta/rest/v1/reports?type=Saved",
+                // url:"http://secure.entertimeonline.com/ta/rest/v1/reports?type=REPORT_ALL_COST_CENTERS",
+                url: "http://secure.entertimeonline.com/ta/rest/v1/report/saved/72067524", //72013777 68101633 72067524 72050470
+                headers: headers
+            });
+            log.debug("response_stage1", response_stage1.body);
+            var str = response_stage1.body;
+            var comma = ",";
+            //  var output = csvToArray(str,comma)  ;  log.debug("output emp", output[1]["\"Employee Id\""]);  log.debug("output", output[1]);
+            //    return {"naveen":output.toString()};
+            var parsingdgh = CSVToArray(str, comma); log.debug("parsingdgh", parsingdgh[1]);
+           
+          var arr = [
+    null, //0
+    "60029DC",//1
+    "The Home Depot, Inc.",//2
+    "5853",//3
+    "5853 Perth Amboy",//4
+    "Truck Gate Inbound",//5
+    "60029DC/The Home Depot, Inc./5853/5853 Perth Amboy/Truck Gate Inbound",//6
+    "174039",//7
+    "Phillpotts, Samantha",//8
+    "Samantha",//9
+    "Phillpotts",//10
+    "M-1 (NJ)",//11
+    "11/21/2021",//12
+    null,//13
+    "Sun 02:07p",//14
+    "Sun 10:07p",//15
+    "11/21/2021 02:00p",//16
+    "11/21/2021 10:00p",//17
+    "8.00",//18
+    "M-1 Loss Prevention Services Group (New Jersey)/New Jersey/The Home Depot/Perth Amboy",//19
+    "NJ",//20
+    "23.6500",//21
+    "128.0000",//22
+    "189.2000",//23
+    "16.0000",//24
+    "NON-OT"//25
+ ];
+          // return { "naveen": arr };
+            return parsingdgh;
+        }
+
+        /**
+         * Executes when the map entry point is triggered and applies to each key/value pair.
+         *
+         * @param {MapSummary} context - Data collection containing the key/value pairs to process through the map stage
+         * @since 2015.1
+         */
+        function map(context) {
+          try{
+            var mapContext = JSON.parse(context.value);
+
+            log.audit("mapContext", mapContext); log.debug("mapContext len", mapContext.length);if (mapContext.length < 20)return;
+            log.debug("value", mapContext[1]);
+          
+            var objKroTimeRecord = record.create({
+                type: "customrecord_72067524"//"customrecord_record_timesheet_72050470"
+            });
+            
+    
+            
+            
+     objKroTimeRecord.setValue("custrecord_cc_customer_number", mapContext[1]);// "Employee Id",0*
+     objKroTimeRecord.setValue("custrecord_cc_customer", mapContext[2]);// "First Name",1*
+     objKroTimeRecord.setValue("custrecord_cc_loc_no", mapContext[3]);// "Last Name",2*
+     objKroTimeRecord.setValue("custrecord_cc_location", mapContext[4]);// "Employee EIN",3*
+     objKroTimeRecord.setText("custrecord_cc_post", mapContext[5]);// "Counter Date",4*
+     objKroTimeRecord.setValue("custrecord_cc_full_path", mapContext[6]);// "Counter Hours",5*
+     objKroTimeRecord.setValue("custrecord_emp_id_24", mapContext[7]);
+     objKroTimeRecord.setValue("custrecord_full_name_24", mapContext[8]);//*6
+     objKroTimeRecord.setValue("custrecord_firstname_24", mapContext[9]);
+     objKroTimeRecord.setValue("custrecord_last_name_24", mapContext[10]);
+     objKroTimeRecord.setValue("custrecord_ein_24", mapContext[11]);//*
+     objKroTimeRecord.setText("custrecord_date_24", mapContext[12]);//*
+     objKroTimeRecord.setValue("custrecord_raw_is_in", mapContext[13]);
+     objKroTimeRecord.setValue("custrecord_raw_start", mapContext[14]);
+     objKroTimeRecord.setValue("custrecord_raw_end", mapContext[15]);
+     objKroTimeRecord.setValue("custrecord_sch_st_time", mapContext[16]);
+     objKroTimeRecord.setValue("custrecord_sch_end_time", mapContext[17]);
+     objKroTimeRecord.setValue("custrecord_raw_end", "-");//mapContext[18]
+     objKroTimeRecord.setValue("custrecord_calc_hrs_24",mapContext[18] );//mapContext[19]
+     objKroTimeRecord.setValue("custrecord_ein_full_path", mapContext[19]); 
+     objKroTimeRecord.setValue("custrecord_cc_state", mapContext[20]); 
+     objKroTimeRecord.setValue("custrecord_bill_rates_24", mapContext[21]);
+     objKroTimeRecord.setValue("custrecord_rt_1_amount", mapContext[22]); 
+     objKroTimeRecord.setValue("custrecord_rt_1_rate", mapContext[23]);
+     objKroTimeRecord.setValue("custrecord_rt_3_amount", mapContext[24]);
+     objKroTimeRecord.setValue("custrecord_schedule_flag_24", mapContext[25]);         
+       //log.audit("date",mapContext[4]);
+            var id = objKroTimeRecord.save({
+                enableSourcing: false,
+                ignoreMandatoryFields: true
+            });
+        //  log.audit("rec id" , id);
+         //  log.audit("value 1",1);
+          }catch(ex){
+            log.error("ex",ex.name + ex.message);
+          }
+          
+          
+          // [
+//    null,
+//    "60029DC",
+//    "The Home Depot, Inc.",
+//    "5853",
+//    "5853 Perth Amboy",
+//    "Truck Gate Inbound",
+//    "60029DC/The Home Depot, Inc./5853/5853 Perth Amboy/Truck Gate Inbound",
+//    "174039",
+//    "Phillpotts, Samantha",
+//    "Samantha",
+//    "Phillpotts",
+//    "M-1 (NJ)",
+//    "11/21/2021",
+//    null,
+//    "Sun 02:07p",
+//    "Sun 10:07p",
+//    "11/21/2021 02:00p",
+//    "11/21/2021 10:00p",
+//    "8.00",
+//    "M-1 Loss Prevention Services Group (New Jersey)/New Jersey/The Home Depot/Perth Amboy",
+//    "NJ",
+//    "23.6500",
+//    "128.0000",
+//    "189.2000",
+//    "16.0000",
+//    "NON-OT"
+// ] 72067524
+        }
+
+
+        /**
+         * Executes when the reduce entry point is triggered and applies to each group.
+         *
+         * @param {ReduceSummary} context - Data collection containing the groups to process through the reduce stage
+         * @since 2015.1
+         */
+        function reduce(context) {
+
+        }
+
+
+        /**
+         * Executes when the summarize entry point is triggered and applies to the result set.
+         *
+         * @param {Summary} summary - Holds statistics regarding the execution of a map/reduce script
+         * @since 2015.1
+         */
+        function summarize(summary) {
+
+        }
+
+        function login() {
+            try {
+                var headers = {
+                    'accept': '*/*',
+                    'Accept-Encoding': 'gzip, deflate, br',
+                    'Connection': 'keep-alive',
+                    'Content-Type': 'application/json',
+                    'api-key': '878f1mikybdtgh7tosnvoogofapomium',
+                };
+
+                var body = {
+                    "credentials": {
+                        "username": "SOAPNETSUser",
+                        "password": "Amzur2021%",
+                        "company": "6154221"
+                    }
+                };
+
+                body = JSON.stringify(body);
+
+                var response = http.post({
+                    url: 'http://secure.entertimeonline.com/ta/rest/v1/login',
+                    headers: headers,
+                    body: body,
+                });
+
+                var myresponse_body = JSON.parse(response.body);
+
+                var tkn = myresponse_body.token;
+                log.debug('token', tkn);
+
+                return tkn;
+            } catch (ex) {
+                log.debug(ex.name + " : " + ex.message, ex);
+            }
+        }
+        function csvToArray(str, delimiter) {
+            // slice from start of text to the first \n index
+            // use split to create an array from string by delimiter
+            const headers = str.slice(0, str.indexOf("\n")).split(delimiter);
+
+            // slice from \n index + 1 to the end of the text
+            // use split to create an array of each csv value row
+            const rows = str.slice(str.indexOf("\n") + 1).split("\n");
+
+            // Map the rows
+            // split values from each row into an array
+            // use headers.reduce to create an object
+            // object properties derived from headers:values
+            // the object passed as an element of the array
+            const arr = rows.map(function (row) {
+                const values = row.split(delimiter);
+                const el = headers.reduce(function (object, header, index) {
+                    object[header] = values[index];
+                    return object;
+                }, {});
+                return el;
+            });
+
+            // return the array
+            return arr;
+        }
+        function CSVToArray(strData, strDelimiter) {
+            // Check to see if the delimiter is defined. If not,
+            // then default to comma.
+            strDelimiter = (strDelimiter || ",");
+
+            // Create a regular expression to parse the CSV values.
+            var objPattern = new RegExp(
+                (
+                    // Delimiters.
+                    "(\\" + strDelimiter + "|\\r?\\n|\\r|^)" +
+
+                    // Quoted fields.
+                    "(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|" +
+
+                    // Standard fields.
+                    "([^\"\\" + strDelimiter + "\\r\\n]*))"
+                ),
+                "gi"
+            );
+
+
+            // Create an array to hold our data. Give the array
+            // a default empty first row.
+            var arrData = [[]];
+
+            // Create an array to hold our individual pattern
+            // matching groups.
+            var arrMatches = null;
+
+
+            // Keep looping over the regular expression matches
+            // until we can no longer find a match.
+            while (arrMatches = objPattern.exec(strData)) {
+
+                // Get the delimiter that was found.
+                var strMatchedDelimiter = arrMatches[1];
+
+                // Check to see if the given delimiter has a length
+                // (is not the start of string) and if it matches
+                // field delimiter. If id does not, then we know
+                // that this delimiter is a row delimiter.
+                if (
+                    strMatchedDelimiter.length &&
+                    strMatchedDelimiter !== strDelimiter
+                ) {
+
+                    // Since we have reached a new row of data,
+                    // add an empty row to our data array.
+                    arrData.push([]);
+
+                }
+
+                var strMatchedValue;
+
+                // Now that we have our delimiter out of the way,
+                // let's check to see which kind of value we
+                // captured (quoted or unquoted).
+                if (arrMatches[2]) {
+
+                    // We found a quoted value. When we capture
+                    // this value, unescape any double quotes.
+                    strMatchedValue = arrMatches[2].replace(
+                        new RegExp("\"\"", "g"),
+                        "\""
+                    );
+
+                } else {
+
+                    // We found a non-quoted value.
+                    strMatchedValue = arrMatches[3];
+
+                }
+
+
+                // Now that we have our value string, let's add
+                // it to the data array.
+                arrData[arrData.length - 1].push(strMatchedValue);
+            }
+
+            // Return the parsed data.
+            return (arrData);
+        }
+
+        return {
+            getInputData: getInputData,
+            map: map,
+            //reduce: reduce,
+            // summarize: summarize
+        };
+
+    });
