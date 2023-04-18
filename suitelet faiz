@@ -1,0 +1,169 @@
+
+Conversation opened. 1 read message.
+
+Skip to content
+Using Amzur Technologies, Inc. Mail with screen readers
+santosh.mudiganti@amzur.com -{system@sent-via.netsuite.com, www@openair.com}
+
+330 of many
+Suitelet script
+Inbox
+
+Faiz Ahmad <faiz.ahmad@amzur.com>
+Attachments
+Thu, Mar 3, 2022, 6:20 PM
+to Santosh, Vishesh, me
+
+
+
+--
+	
+Faiz Ahmad| NetSuite Technical Consultant
+M: +91 7503597395
+W: https://www.amzur.com
+
+					
+An ISO 9001:2015 Certified Company
+An ISO 27001:2013 Certified Company
+
+The content of this message is confidential. If you have received it by mistake, please inform us by email reply and then delete the message. It is forbidden to copy, forward, or in any way reveal the contents of this message to anyone. The integrity and security of this email cannot be guaranteed over the Internet. Therefore, the sender will not be held liable for any damage caused by the message.
+
+ One attachment
+  •  Scanned by Gmail
+Received, thank you.Got it, thanks!Thanks a lot.
+
+/**
+ * @NApiVersion 2.x
+ * @NScriptType Suitelet
+ * @NModuleScope SameAccount
+ */
+define(["N/ui/serverWidget", "N/render", "N/search", "N/record"],
+    function (serverWidget, render, search, record) {
+        /**
+             * Definition of the Suitelet script trigger point.
+             *
+             * @param {Object} context
+             * @param {ServerRequest} context.request - Encapsulation of the incoming request
+             * @param {ServerResponse} context.response - Encapsulation of the Suitelet response
+             * @Since 2015.2
+             */
+        function onRequest(context) {
+            try {
+                var request = context.request;
+                log.debug("request 19", request);
+                var response = context.response;
+
+                if (request.method == "GET") {
+                    log.debug('GET', 'GET');
+                    var objForm = serverWidget.createForm({
+                        title: "Geo-Med's ECAT Med/Surg Price List: Results"
+                    });
+                    var button = objForm.addSubmitButton({
+                        label: 'Print'
+                    });
+
+                    var typeField = objForm.addField({
+                        id: 'custpage_type_dropdown',
+                        type: serverWidget.FieldType.SELECT,
+                        label: 'Type'
+                    });
+                    typeField.addSelectOption({
+                        value: 'a',
+                        text: "Manufacturer"
+                    });
+                    typeField.addSelectOption({
+                        value: 'b',
+                        text: "Class"
+                    });
+                    typeField.addSelectOption({
+                        value: 'c',
+                        text: "Manufacturer/Class"
+                    });
+
+                    var selectfield = objForm.addField({
+                        id: 'custpage_search_dropdown',
+                        type: serverWidget.FieldType.SELECT,
+                        label: 'Search Dropdown'
+                    });
+                    selectfield.addSelectOption({
+                        value: 'a',
+                        text: "Geo-Med's ECAT Med/Surg Price List"
+                    });
+                    selectfield.addSelectOption({
+                        value: 'b',
+                        text: "TEST - Geo-Med's ECAT Med/Surg Price List"
+                    });
+                    context.response.writePage(objForm);
+                }
+
+                if (request.method == "POST") {
+                    var myJson = {
+                        "mainObj": [
+                            {
+                                "itemname": "64813",
+                                "salesdesc": "AlloDerm SELECT 1x1- XThick 2.8-4.0",
+                                "uom": "EA",
+                                "price": "85.80",
+                                "type": 1
+                            },
+                            {
+                                "itemname": "64813",
+                                "salesdesc": "AlloDerm SELECT 1x1- XThick 2.8-4.0",
+                                "uom": "EA",
+                                "price": "85.80",
+                                "type": 1
+                            },
+                            {
+                                "itemname": "64813",
+                                "salesdesc": "AlloDerm SELECT 1x1- XThick 2.8-4.0",
+                                "uom": "EA",
+                                "price": "85.80",
+                                "type": 1
+                            },
+                            {
+                                "itemname": "64813",
+                                "salesdesc": "AlloDerm SELECT 1x1- XThick 2.8-4.0",
+                                "uom": "EA",
+                                "price": "85.80",
+                                "type": 1
+                            }
+                        ]
+                    };
+
+                    log.debug('POST', 'POST');
+                    //log.debug('response', response);
+                    var searchOptionValue = request.parameters.custpage_search_dropdown;
+                    var typeOptionValue = request.parameters.custpage_type_dropdown;
+                    log.debug('Type value', typeOptionValue);
+                    log.debug('searchOptionValue', request.parameters);
+                    if (searchOptionValue == "a") {
+                        var pdfRenderer = render.create();
+
+                        pdfRenderer.setTemplateByScriptId({
+                            scriptId: "CUSTTMPL_139_1110051_SB1_817"
+                        });
+
+                        pdfRenderer.addCustomDataSource({
+                            format: render.DataSource.OBJECT,
+                            alias: "myJson",
+                            data: myJson
+                        });
+
+                        var mypdf = pdfRenderer.renderAsString();
+                        response.renderPdf(mypdf);
+                    }
+                    if (searchOptionValue == "b") {
+                        log.debug("TEST - Geo-Med's ECAT Med/Surg Price List", "TEST - Geo-Med's ECAT Med/Surg Price List");
+                    }
+                }
+            } catch (ex) {
+                log.debug(ex.name, ex.message);
+            }
+        }
+
+        return {
+            onRequest: onRequest
+        };
+    });
+suitelet.txt
+Displaying suitelet.txt.
